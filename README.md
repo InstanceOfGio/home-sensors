@@ -66,6 +66,9 @@ credentials natively on first load.
   (also available from the dashboard, by clicking a sensor's name on its card)
 - `GET /api/current` — latest state of every sensor
 - `GET /api/history?range=24h|7d|30d` — historical readings
+- `GET /api/weather` — cached hourly outdoor forecast for the rest of the day
+  (only registered when `WEATHER_LAT`/`WEATHER_LON` are set; `503` until the
+  first fetch completes)
 - `GET /ws` — WebSocket stream of real-time updates
 
 ### Expected payload from the Minew gateway
@@ -105,6 +108,22 @@ and an empty `room`. Open the dashboard, click a sensor card's name, and
 give it a real name/room (e.g. "Outdoor" / "outdoor", "Living room" /
 "living-room"). No restart needed.
 
+## Weather forecast
+
+Setting `WEATHER_LAT` and `WEATHER_LON` (your home's coordinates) enables
+`GET /api/weather`, backed by [Open-Meteo](https://open-meteo.com/) — free,
+no API key needed. The forecast (temperature, precipitation probability,
+wind speed, humidity) is fetched once at startup and refreshed in the
+background every hour; requests are always served from an in-memory cache,
+never hitting the upstream API directly. The response only contains the
+hourly data points — the configured coordinates are never echoed back, so
+your location isn't exposed to anything reading the API response.
+
+Leave `WEATHER_LAT`/`WEATHER_LON` unset to disable the feature entirely
+(the route isn't registered and the server logs a warning at startup).
+Since these are location data, set them via `fly secrets set` rather than
+`fly.toml` in production, same as the Basic Auth credentials.
+
 ## Deploying to Fly.io (free tier)
 
 SQLite works well on Fly because persistent volumes survive VM restarts
@@ -115,6 +134,7 @@ Fly's current free-tier limits, since they change over time.
 fly launch --no-deploy        # generates/updates the app, uses the existing fly.toml
 fly volumes create sensors_data --size 1 --region ams
 fly secrets set BASIC_AUTH_USER=changeme BASIC_AUTH_PASS=changeme
+fly secrets set WEATHER_LAT=52.5200 WEATHER_LON=13.4050
 fly deploy
 ```
 

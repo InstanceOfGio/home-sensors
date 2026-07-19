@@ -31,6 +31,14 @@ type HistoryPoint struct {
 	Battery     int64     `json:"battery"`
 }
 
+type WeatherPoint struct {
+	Time                     time.Time `json:"t"`
+	Temperature              float64   `json:"temperature"`
+	PrecipitationProbability float64   `json:"precipitation_probability"`
+	WindSpeed                float64   `json:"wind_speed"`
+	Humidity                 float64   `json:"humidity"`
+}
+
 type MinewPayload struct {
 	Tm  time.Time  `json:"tm"`
 	Gw  string     `json:"gw"`

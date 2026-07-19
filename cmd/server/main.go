@@ -16,6 +16,7 @@ import (
 	"home-sensors/internal/config"
 	"home-sensors/internal/storage"
 	"home-sensors/internal/webhook"
+	"home-sensors/internal/weather"
 	hub "home-sensors/internal/websocket"
 )
 
@@ -42,7 +43,18 @@ func main() {
 		os.Exit(1)
 	}
 
-	router := api.NewRouter(store, wh, wsHub, http.FS(staticSub), log, cfg.AuthUser, cfg.AuthPass)
+	bgCtx, stopBg := context.WithCancel(context.Background())
+	defer stopBg()
+
+	var weatherCache *weather.Cache
+	if cfg.WeatherEnabled {
+		weatherCache = weather.NewCache(cfg.WeatherLat, cfg.WeatherLon, log)
+		weatherCache.Start(bgCtx)
+	} else {
+		log.Warn("WEATHER_LAT/WEATHER_LON not set, weather forecast disabled")
+	}
+
+	router := api.NewRouter(store, wh, wsHub, weatherCache, http.FS(staticSub), log, cfg.AuthUser, cfg.AuthPass)
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.Port,

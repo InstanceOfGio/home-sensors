@@ -10,11 +10,13 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"home-sensors/internal/storage"
+	"home-sensors/internal/weather"
 )
 
 type Handlers struct {
-	store *storage.Store
-	log   *slog.Logger
+	store   *storage.Store
+	weather *weather.Cache
+	log     *slog.Logger
 }
 
 func (h *Handlers) ListDevices(w http.ResponseWriter, r *http.Request) {
@@ -85,6 +87,15 @@ func (h *Handlers) History(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.log.Error("history failed", "err", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, points)
+}
+
+func (h *Handlers) Weather(w http.ResponseWriter, r *http.Request) {
+	points, fetchedAt := h.weather.Get()
+	if fetchedAt.IsZero() {
+		http.Error(w, "weather forecast not available yet", http.StatusServiceUnavailable)
 		return
 	}
 	writeJSON(w, points)
