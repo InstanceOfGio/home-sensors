@@ -12,10 +12,16 @@ import (
 	hub "home-sensors/internal/websocket"
 )
 
-func NewRouter(store *storage.Store, wh *webhook.Handler, wsHub *hub.Hub, staticFS http.FileSystem, log *slog.Logger) http.Handler {
+func NewRouter(store *storage.Store, wh *webhook.Handler, wsHub *hub.Hub, staticFS http.FileSystem, log *slog.Logger, authUser, authPass string) http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+
+	if authUser != "" && authPass != "" {
+		r.Use(basicAuth(authUser, authPass))
+	} else {
+		log.Warn("BASIC_AUTH_USER/BASIC_AUTH_PASS not set, API is running without authentication")
+	}
 
 	h := &Handlers{store: store, log: log}
 

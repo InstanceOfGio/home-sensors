@@ -42,7 +42,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	router := api.NewRouter(store, wh, wsHub, http.FS(staticSub), log)
+	router := api.NewRouter(store, wh, wsHub, http.FS(staticSub), log, cfg.AuthUser, cfg.AuthPass)
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.Port,

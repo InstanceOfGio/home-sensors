@@ -44,6 +44,20 @@ environment variables (see `.env.example`).
 
 Open `http://localhost:8080`.
 
+## Authentication
+
+The whole app (dashboard, REST API, webhook, WebSocket) is protected with
+HTTP Basic Auth when `BASIC_AUTH_USER` and `BASIC_AUTH_PASS` are both set.
+If either is left unset, the server starts without authentication and logs
+a warning — handy for local development, but make sure both are set in
+production.
+
+Point the Minew gateway's webhook URL at
+`https://user:pass@your-app.fly.dev/webhook/minew` (or configure an
+`Authorization: Basic <base64(user:pass)>` header directly, if the gateway
+supports custom headers). The browser dashboard just prompts for
+credentials natively on first load.
+
 ## Endpoints
 
 - `POST /webhook/minew` — receives the gateway payload (see below)
@@ -100,8 +114,12 @@ Fly's current free-tier limits, since they change over time.
 ```bash
 fly launch --no-deploy        # generates/updates the app, uses the existing fly.toml
 fly volumes create sensors_data --size 1 --region fra
+fly secrets set BASIC_AUTH_USER=changeme BASIC_AUTH_PASS=changeme
 fly deploy
 ```
+
+`BASIC_AUTH_USER`/`BASIC_AUTH_PASS` are set via `fly secrets set` rather
+than `[env]` in `fly.toml`, since that file is committed to the repo.
 
 Then point the Minew gateway at `https://<your-app>.fly.dev/webhook/minew`.
 
