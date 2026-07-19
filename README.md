@@ -113,7 +113,7 @@ Fly's current free-tier limits, since they change over time.
 
 ```bash
 fly launch --no-deploy        # generates/updates the app, uses the existing fly.toml
-fly volumes create sensors_data --size 1 --region fra
+fly volumes create sensors_data --size 1 --region ams
 fly secrets set BASIC_AUTH_USER=changeme BASIC_AUTH_PASS=changeme
 fly deploy
 ```
