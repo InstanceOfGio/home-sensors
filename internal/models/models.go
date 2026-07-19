@@ -37,6 +37,7 @@ type WeatherPoint struct {
 	PrecipitationProbability float64   `json:"precipitation_probability"`
 	WindSpeed                float64   `json:"wind_speed"`
 	Humidity                 float64   `json:"humidity"`
+	WeatherCode              int       `json:"weather_code"`
 }
 
 type MinewPayload struct {

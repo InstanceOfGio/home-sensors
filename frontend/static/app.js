@@ -66,16 +66,25 @@ function renderCards() {
     const updated = c ? new Date(c.updated_at) : null;
 
     const card = document.createElement('article');
-    card.className = 'card';
+    card.className = 'surface-card soft-cloud-shadow';
+    card.style.display = 'flex';
+    card.style.flexDirection = 'column';
     card.innerHTML = `
-      <div class="card-head">
-        <span class="dot" style="background:${color}"></span>
-        <button class="rename-btn" data-id="${d.id}" title="Rename">${escapeHTML(deviceLabel(d))} ✎</button>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;">
+        <span class="material-symbols-outlined" style="font-size:1.9rem;color:${color};">thermostat</span>
+        <button class="rename-btn material-symbols-outlined" data-id="${d.id}" title="Rename" style="font-size:1.2rem;color:var(--on-surface-variant);">edit</button>
       </div>
-      <div class="card-body">
-        <div class="metric"><span class="value">${c ? c.temperature.toFixed(1) : '–'}</span><span class="unit">°C</span></div>
-        <div class="sub">💧 ${c ? c.humidity.toFixed(0) : '–'}%　🔋 ${c ? c.battery : '–'}%</div>
-        <div class="sub muted">Updated: ${updated ? updated.toLocaleString() : 'never'}</div>
+      <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:8px;">
+        <span style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:2rem;color:var(--on-surface);">${c ? c.temperature.toFixed(1) : '–'}</span>
+        <span style="color:var(--on-surface-variant);">°C</span>
+      </div>
+      <div style="display:flex;gap:16px;color:var(--on-surface-variant);font-size:0.9rem;margin-bottom:16px;">
+        <span>💧 ${c ? c.humidity.toFixed(0) : '–'}%</span>
+        <span>🔋 ${c ? c.battery : '–'}%</span>
+      </div>
+      <div style="margin-top:auto;padding-top:12px;border-top:1px solid var(--border);">
+        <p style="font-family:'Quicksand',sans-serif;font-weight:600;color:var(--on-surface);margin:0;">${escapeHTML(deviceLabel(d))}</p>
+        <p style="font-size:0.75rem;color:var(--on-surface-variant);margin:2px 0 0;">Updated: ${updated ? updated.toLocaleString() : 'never'}</p>
       </div>
     `;
     container.appendChild(card);
@@ -130,8 +139,8 @@ function buildDatasets(points, key) {
 
 function chartOptions(unit) {
   const dark = isDark();
-  const ink = dark ? '#c3c2b7' : '#52514e';
-  const grid = dark ? '#2c2c2a' : '#e1e0d9';
+  const ink = dark ? '#d0c6ab' : '#4d4732';
+  const grid = dark ? '#4d4732' : '#d0c6ab';
 
   return {
     responsive: true,
@@ -243,12 +252,71 @@ function initRangeButtons() {
   });
 }
 
+function greetingText() {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning!';
+  if (h < 18) return 'Good afternoon!';
+  return 'Good evening!';
+}
+
+function updateGreeting() {
+  document.getElementById('greeting').textContent = greetingText();
+  const options = { weekday: 'long', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+  document.getElementById('current-datetime').textContent = new Date().toLocaleDateString(undefined, options);
+}
+
+function weatherIcon(code) {
+  if (code === 0) return 'wb_sunny';
+  if (code === 1 || code === 2) return 'partly_cloudy_day';
+  if (code === 3) return 'cloud';
+  if (code === 45 || code === 48) return 'foggy';
+  if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return 'rainy';
+  if ([71, 73, 75, 77, 85, 86].includes(code)) return 'weather_snowy';
+  if ([95, 96, 99].includes(code)) return 'thunderstorm';
+  return 'thermostat';
+}
+
+function renderWeather(points) {
+  const section = document.getElementById('weather-section');
+  if (!points.length) {
+    section.style.display = 'none';
+    return;
+  }
+
+  document.getElementById('weather-hourly').innerHTML = points.map((p) => {
+    const hour = new Date(p.t).toLocaleTimeString(undefined, { hour: 'numeric' });
+    return `
+      <div style="display:flex;flex-direction:column;align-items:center;min-width:70px;flex-shrink:0;">
+        <p style="font-family:'Quicksand',sans-serif;font-weight:600;font-size:0.85rem;color:var(--on-surface-variant);margin:0 0 8px;">${hour}</p>
+        <span class="material-symbols-outlined" style="font-size:1.9rem;color:var(--secondary);margin-bottom:8px;">${weatherIcon(p.weather_code)}</span>
+        <p style="font-family:'Quicksand',sans-serif;font-weight:600;font-size:1.1rem;color:var(--on-surface);margin:0;">${Math.round(p.temperature)}°</p>
+        <p style="font-size:0.75rem;color:var(--on-surface-variant);margin:4px 0 0;">💧${Math.round(p.precipitation_probability)}% 🌬${Math.round(p.wind_speed)}</p>
+      </div>
+    `;
+  }).join('');
+
+  section.style.display = 'block';
+}
+
+async function loadWeather() {
+  try {
+    const points = await fetchJSON('/api/weather');
+    renderWeather(points);
+  } catch (e) {
+    document.getElementById('weather-section').style.display = 'none';
+  }
+}
+
 async function init() {
+  updateGreeting();
+  setInterval(updateGreeting, 60000);
+
   await loadDevices();
   await loadCurrent();
   await loadHistoryAndRender();
   initRangeButtons();
   connectWS();
+  loadWeather();
 
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
     renderCards();

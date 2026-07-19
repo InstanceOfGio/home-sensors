@@ -21,6 +21,7 @@ type rawResponse struct {
 		PrecipitationProbability []float64 `json:"precipitation_probability"`
 		WindSpeed                []float64 `json:"wind_speed_10m"`
 		Humidity                 []float64 `json:"relative_humidity_2m"`
+		WeatherCode              []int     `json:"weather_code"`
 	} `json:"hourly"`
 }
 
@@ -31,7 +32,7 @@ func FetchToday(ctx context.Context, lat, lon float64) ([]models.WeatherPoint, e
 	q := url.Values{}
 	q.Set("latitude", strconv.FormatFloat(lat, 'f', 4, 64))
 	q.Set("longitude", strconv.FormatFloat(lon, 'f', 4, 64))
-	q.Set("hourly", "temperature_2m,precipitation_probability,wind_speed_10m,relative_humidity_2m")
+	q.Set("hourly", "temperature_2m,precipitation_probability,wind_speed_10m,relative_humidity_2m,weather_code")
 	q.Set("timezone", "auto")
 	q.Set("timeformat", "unixtime")
 	q.Set("forecast_days", "1")
@@ -69,6 +70,7 @@ func FetchToday(ctx context.Context, lat, lon float64) ([]models.WeatherPoint, e
 			PrecipitationProbability: raw.Hourly.PrecipitationProbability[i],
 			WindSpeed:                raw.Hourly.WindSpeed[i],
 			Humidity:                 raw.Hourly.Humidity[i],
+			WeatherCode:              raw.Hourly.WeatherCode[i],
 		})
 	}
 	return points, nil
